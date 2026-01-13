@@ -1,7 +1,6 @@
 from fastapi import FastAPI
+from app.routes.health import router as health_router
 
 app = FastAPI(title="Ahten Psico")
 
-@app.get("/")
-def home():
-    return {"status": "ok", "mensagem": "API rodando"}
+app.include_router(health_router)
