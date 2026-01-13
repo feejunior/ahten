@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-app = FastAPI(title="Sistema de Logística para Psicólogas")
+app = FastAPI(title="Ahten Psico")
 
 @app.get("/")
 def home():
