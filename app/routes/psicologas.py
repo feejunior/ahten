@@ -1,32 +1,49 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
 from app.schemas.psicologa import PsicologaCreate
-from fastapi import HTTPException
+from app.models.psicologa import Psicologa
+from app.db.database import get_db
 
 router = APIRouter(
     prefix="/psicologas",
     tags=["Psicólogas"]
 )
 
-# Lista em memória (simula banco)
-psicologas_db = []
+@router.post("/", status_code=201)
+def criar_psicologa(psicologa: PsicologaCreate, db: Session = Depends(get_db)):
+    # verifica se email já existe
+    existe = db.query(Psicologa).filter(Psicologa.email == psicologa.email).first()
+    if existe:
+        raise HTTPException(status_code=400, detail="Email já cadastrado")
 
-@router.post("/")
-def criar_psicologa(psicologa: PsicologaCreate):
-    psicologas_db.append(psicologa)
-    return psicologa
+    nova_psicologa = Psicologa(
+        nome=psicologa.nome,
+        email=psicologa.email,
+        crp=psicologa.crp,
+        ativa=psicologa.ativa
+    )
+
+    db.add(nova_psicologa)
+    db.commit()
+    db.refresh(nova_psicologa)
+
+    return nova_psicologa
+
 
 @router.get("/")
-def listar_psicologas():
-    return psicologas_db
+def listar_psicologas(db: Session = Depends(get_db)):
+    return db.query(Psicologa).all()
+
 
 @router.delete("/{email}")
-def deletar_psicologa(email: str):
-    for psicologa in psicologas_db:
-        if psicologa.email == email:
-            psicologas_db.remove(psicologa)
-            return {"mensagem": "Psicóloga removida com sucesso!"}
+def deletar_psicologa(email: str, db: Session = Depends(get_db)):
+    psicologa = db.query(Psicologa).filter(Psicologa.email == email).first()
 
-    raise HTTPException(
-        status_code=404,
-        detail="Psicóloga não encontrada!"
-    )
+    if not psicologa:
+        raise HTTPException(status_code=404, detail="Psicóloga não encontrada")
+
+    db.delete(psicologa)
+    db.commit()
+
+    return {"mensagem": "Psicóloga removida com sucesso!"}
