@@ -5,12 +5,14 @@ from app.schemas.psicologa import PsicologaCreate
 from app.models.psicologa import Psicologa
 from app.db.database import get_db
 
+from app.schemas.psicologa import PsicologaCreate, PsicologaResponse
+
 router = APIRouter(
     prefix="/psicologas",
     tags=["Psicólogas"]
 )
 
-@router.post("/", status_code=201)
+@router.post("/", response_model=PsicologaResponse, status_code=201)
 def criar_psicologa(psicologa: PsicologaCreate, db: Session = Depends(get_db)):
     # verifica se email já existe
     existe = db.query(Psicologa).filter(Psicologa.email == psicologa.email).first()
@@ -31,7 +33,7 @@ def criar_psicologa(psicologa: PsicologaCreate, db: Session = Depends(get_db)):
     return nova_psicologa
 
 
-@router.get("/")
+@router.get("/", response_model=list[PsicologaResponse])
 def listar_psicologas(db: Session = Depends(get_db)):
     return db.query(Psicologa).all()
 
