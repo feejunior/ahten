@@ -1,4 +1,6 @@
 from pydantic import BaseModel, EmailStr
+from typing import Optional
+
 
 class PsicologaCreate(BaseModel):
     nome: str
@@ -16,3 +18,10 @@ class PsicologaResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class PsicologaUpdate(BaseModel):
+    nome: Optional[str] = None
+    email: Optional[EmailStr] = None
+    crp: Optional[str] = None
+    ativa: Optional[bool] = None
+    

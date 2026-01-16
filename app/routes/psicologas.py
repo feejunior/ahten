@@ -7,6 +7,8 @@ from app.db.database import get_db
 
 from app.schemas.psicologa import PsicologaCreate, PsicologaResponse
 
+from app.schemas.psicologa import PsicologaCreate, PsicologaResponse, PsicologaUpdate
+
 router = APIRouter(
     prefix="/psicologas",
     tags=["Psicólogas"]
@@ -51,3 +53,21 @@ def deletar_psicologa(psicologa_id: int, db: Session = Depends(get_db)):
     db.delete(psicologa)
     db.commit()
 
+@router.patch("/{psicologa_id}", response_model=PsicologaResponse)
+def atualizar_psicologa(
+    psicologa_id: int,
+    dados: PsicologaUpdate,
+    db: Session = Depends(get_db)
+):
+    psicologa = db.query(Psicologa).filter(Psicologa.id == psicologa_id).first()
+
+    if not psicologa:
+        raise HTTPException(status_code=404, detail="Psicóloga não encontrada")
+
+    for campo, valor in dados.model_dump(exclude_unset=True).items():
+        setattr(psicologa, campo, valor)
+
+    db.commit()
+    db.refresh(psicologa)
+
+    return psicologa
