@@ -38,14 +38,16 @@ def listar_psicologas(db: Session = Depends(get_db)):
     return db.query(Psicologa).all()
 
 
-@router.delete("/{email}")
-def deletar_psicologa(email: str, db: Session = Depends(get_db)):
-    psicologa = db.query(Psicologa).filter(Psicologa.email == email).first()
+@router.delete("/{psicologa_id}", status_code=204)
+def deletar_psicologa(psicologa_id: int, db: Session = Depends(get_db)):
+    psicologa = db.query(Psicologa).filter(Psicologa.id == psicologa_id).first()
 
     if not psicologa:
-        raise HTTPException(status_code=404, detail="Psicóloga não encontrada")
+        raise HTTPException(
+            status_code=404,
+            detail="Psicóloga não encontrada"
+        )
 
     db.delete(psicologa)
     db.commit()
 
-    return {"mensagem": "Psicóloga removida com sucesso!"}
