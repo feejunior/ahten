@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.schemas.psicologa import PsicologaCreate
-from app.models.psicologa import Psicologa
 from app.db.database import get_db
-
-from app.schemas.psicologa import PsicologaCreate, PsicologaResponse
-
-from app.schemas.psicologa import PsicologaCreate, PsicologaResponse, PsicologaUpdate
+from app.models.psicologa import Psicologa
+from app.schemas.psicologa import (
+    PsicologaCreate,
+    PsicologaResponse,
+    PsicologaUpdate
+)
 
 router = APIRouter(
     prefix="/psicologas",
@@ -15,11 +15,21 @@ router = APIRouter(
 )
 
 @router.post("/", response_model=PsicologaResponse, status_code=201)
-def criar_psicologa(psicologa: PsicologaCreate, db: Session = Depends(get_db)):
-    # verifica se email já existe
-    existe = db.query(Psicologa).filter(Psicologa.email == psicologa.email).first()
+def criar_psicologa(
+    psicologa: PsicologaCreate,
+    db: Session = Depends(get_db)
+):
+    existe = (
+        db.query(Psicologa)
+        .filter(Psicologa.email == psicologa.email)
+        .first()
+    )
+
     if existe:
-        raise HTTPException(status_code=400, detail="Email já cadastrado")
+        raise HTTPException(
+            status_code=400,
+            detail="Email já cadastrado"
+        )
 
     nova_psicologa = Psicologa(
         nome=psicologa.nome,
@@ -41,8 +51,15 @@ def listar_psicologas(db: Session = Depends(get_db)):
 
 
 @router.delete("/{psicologa_id}", status_code=204)
-def deletar_psicologa(psicologa_id: int, db: Session = Depends(get_db)):
-    psicologa = db.query(Psicologa).filter(Psicologa.id == psicologa_id).first()
+def deletar_psicologa(
+    psicologa_id: int,
+    db: Session = Depends(get_db)
+):
+    psicologa = (
+        db.query(Psicologa)
+        .filter(Psicologa.id == psicologa_id)
+        .first()
+    )
 
     if not psicologa:
         raise HTTPException(
@@ -53,18 +70,44 @@ def deletar_psicologa(psicologa_id: int, db: Session = Depends(get_db)):
     db.delete(psicologa)
     db.commit()
 
+
 @router.patch("/{psicologa_id}", response_model=PsicologaResponse)
 def atualizar_psicologa(
     psicologa_id: int,
     dados: PsicologaUpdate,
     db: Session = Depends(get_db)
 ):
-    psicologa = db.query(Psicologa).filter(Psicologa.id == psicologa_id).first()
+    psicologa = (
+        db.query(Psicologa)
+        .filter(Psicologa.id == psicologa_id)
+        .first()
+    )
 
     if not psicologa:
-        raise HTTPException(status_code=404, detail="Psicóloga não encontrada")
+        raise HTTPException(
+            status_code=404,
+            detail="Psicóloga não encontrada"
+        )
 
-    for campo, valor in dados.model_dump(exclude_unset=True).items():
+    dados_update = dados.model_dump(exclude_unset=True)
+
+    if "email" in dados_update:
+        email_existe = (
+            db.query(Psicologa)
+            .filter(
+                Psicologa.email == dados_update["email"],
+                Psicologa.id != psicologa_id
+            )
+            .first()
+        )
+
+        if email_existe:
+            raise HTTPException(
+                status_code=400,
+                detail="Email já cadastrado para outra psicóloga"
+            )
+
+    for campo, valor in dados_update.items():
         setattr(psicologa, campo, valor)
 
     db.commit()
